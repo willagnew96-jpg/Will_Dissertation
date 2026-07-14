@@ -82,7 +82,9 @@ server <- function(input, output, session) {
   })
   
   output$data_preview <- DT::renderDT({
+    #make sure joined_df is available
     req(rv$joined_df)
+    #output joined_df
     DT::datatable(rv$joined_df)
   })
   
@@ -94,6 +96,58 @@ server <- function(input, output, session) {
       select(all_of(cols)) %>%
       distinct()
   })
+  
+ 
+  observeEvent(input$estimate_btn, {
+    req(rv$joined_df)
+    #check if a model has been uploaded
+    sq_mod <- if (!is.null(input$model_file)) {
+      tryCatch(readRDS(input$model_file$datapath), error = function(e) NULL)
+    } else {
+      load_chosen_model()
+    }
+    #if not use my model
+    if (is.null(sq_mod)) {
+      showNotification("No model available - upload one or add chosen_model.rds.",
+                       type = "error")
+      return(invisible(NULL))
+    }
+    
+    newdata <- newdata_reactive()
+    
+    #show progress bar for bootstrapping
+    withProgress(message = "Running multiple estimate simulations...", value = 0.1, {
+      result <- tryCatch(
+        estimate_population(
+          sq_mod = sq_mod, newdata = newdata,
+          area_conifer = input$area_conifer, area_all = input$area_all,
+          nsim = input$nsim, ncores = input$ncores
+        ),
+        #erroe message incase bootstrap fails
+        error = function(e) {
+          showNotification(paste("Error estimating abundance:", e$message), type = "error")
+          NULL
+        }
+      )
+      
+      if (is.null(result)) {
+        rv$estimate <- NULL; rv$pb <- NULL; rv$sq_mod <- NULL
+      } else {
+        rv$estimate <- result$estimate
+        rv$pb <- result$pb
+        rv$sq_mod <- sq_mod
+      }
+      #moves the progress bar forward
+      incProgress(0.9)
+    })
+  })
+  
+  output$estimate_out <- renderTable({
+    req(rv$estimate)
+    #dataframe displays better than the matrix
+    df <- as.data.frame(rv$estimate)
+    cbind(Area = rownames(df), df, row.names = NULL)
+  })
 }
-
 shinyApp(ui, server)
+  
