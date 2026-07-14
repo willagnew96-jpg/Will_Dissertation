@@ -23,7 +23,7 @@ ui <- fluidPage(
       actionButton("process_btn", "Process data", class = "btn-primary")
     ),
     mainPanel(
-      #outputs will go here
+      DT::DTOutput("data_preview")
     )
   )
 )
