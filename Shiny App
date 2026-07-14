@@ -60,6 +60,15 @@ server <- function(input, output, session) {
     req(rv$joined_df)
     DT::datatable(rv$joined_df)
   })
+  
+  #make the app display reactive to the entry of new data
+  newdata_reactive <- reactive({
+    req(rv$joined_df)
+    cols <- intersect(c("Transect", "Year", "Season"), names(rv$joined_df))
+    rv$joined_df %>%
+      select(all_of(cols)) %>%
+      distinct()
+  })
 }
 
 shinyApp(ui, server)
