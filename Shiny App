@@ -1,1 +1,30 @@
 
+library(shiny)
+library(dplyr)
+library(unmarked)
+library(HDInterval)
+
+#function I created that processes the data into the correct format for gdistsamp
+source("Data_processing_function.R")
+#predicts abundance and CIs based on entered data for a pre-determinded gdistsamp model
+source("estimate_function.R")
+
+ui <- fluidPage(
+  titlePanel("Squirrel Abundance Predictor"),
+  sidebarLayout(
+    sidebarPanel(
+      #inputs will go here
+    ),
+    mainPanel(
+      #outputs will go here
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  #I want the inputs to be entered step by step rather than reactively as the
+  #Bootstrapping can take a while
+  rv <- reactiveValues(joined_df = NULL, estimate = NULL, pb = NULL, sq_mod = NULL)
+}
+
+shinyApp(ui, server)
