@@ -8,6 +8,19 @@ source("Data_processing_function.R")
 #predicts abundance and CIs based on entered data for a pre-determinded gdistsamp model
 source("estimate_function.R")
 
+
+#pull my chosen model from a file I've created
+CHOSEN_MODEL_PATH <- "chosen_model.rds"
+
+load_chosen_model <- function() {
+  if (file.exists(CHOSEN_MODEL_PATH)) {
+    readRDS(CHOSEN_MODEL_PATH)
+  } else {
+    NULL
+  }
+}
+
+
 ui <- fluidPage(
   titlePanel("Squirrel Abundance Predictor"),
   sidebarLayout(
@@ -20,7 +33,12 @@ ui <- fluidPage(
       #Using 2010-current year as the input options
       selectInput("year", "Year", choices = rev(2010:as.numeric(format(Sys.Date(), "%Y")))),
       selectInput("season", "Season", choices = c("Spring", "Autumn")),
-      actionButton("process_btn", "Process data", class = "btn-primary")
+      actionButton("process_btn", "Process data", class = "btn-primary"),
+      
+      #can override my chosen model
+      h4("2. Model"),
+      fileInput("model_file", "Fitted model (.rds) - optional, overrides the placeholder",
+                accept = ".rds"),
     ),
     mainPanel(
       DT::DTOutput("data_preview")
