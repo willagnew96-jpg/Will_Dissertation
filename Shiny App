@@ -1,4 +1,3 @@
-
 library(shiny)
 library(dplyr)
 library(unmarked)
@@ -13,7 +12,15 @@ ui <- fluidPage(
   titlePanel("Squirrel Abundance Predictor"),
   sidebarLayout(
     sidebarPanel(
-      #inputs will go here
+      h4("1. Upload data"),
+      fileInput("transect_file", "Transect data (.csv)", accept = ".csv"),
+      fileInput("sightings_file", "Sightings data (.csv)", accept = ".csv"),
+      fileInput("tlengths_file", "Transect lengths (.xlsx)", accept = c(".xlsx", ".xls")),
+      selectInput("species", "Species", choices = c("Red", "Grey")),
+      #Using 2010-current year as the input options
+      selectInput("year", "Year", choices = rev(2010:as.numeric(format(Sys.Date(), "%Y")))),
+      selectInput("season", "Season", choices = c("Spring", "Autumn")),
+      actionButton("process_btn", "Process data", class = "btn-primary")
     ),
     mainPanel(
       #outputs will go here
@@ -25,6 +32,34 @@ server <- function(input, output, session) {
   #I want the inputs to be entered step by step rather than reactively as the
   #Bootstrapping can take a while
   rv <- reactiveValues(joined_df = NULL, estimate = NULL, pb = NULL, sq_mod = NULL)
+  
+  observeEvent(input$process_btn, {
+    #make sure all expected files are added
+    req(input$transect_file, input$sightings_file, input$tlengths_file)
+    
+    transect_data <- read.csv(input$transect_file$datapath, header = TRUE)
+    sightings     <- read.csv(input$sightings_file$datapath, header = TRUE)
+    tlengths      <- readxl::read_xlsx(input$tlengths_file$datapath)
+    
+    joined <- tryCatch(
+      combine_data(transect_data, sightings, tlengths,
+                   species_filter = input$species,
+                   Year_filter    = as.numeric(input$year),
+                   Season_filter  = input$season),
+      error = function(e) {
+        #visible error message in case combine_data() errors
+        showNotification(paste("Error processing data:", e$message), type = "error")
+        NULL
+      }
+    )
+    
+    rv$joined_df <- joined
+  })
+  
+  output$data_preview <- DT::renderDT({
+    req(rv$joined_df)
+    DT::datatable(rv$joined_df)
+  })
 }
 
 shinyApp(ui, server)
