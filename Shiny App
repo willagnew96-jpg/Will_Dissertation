@@ -44,17 +44,17 @@ ui <- fluidPage(
       numericInput("area_all", "Area 2 (km²)", value = 177.1593),
       numericInput("nsim", "Bootstrap simulations", value = 1000, min = 100, step = 100),
       numericInput("ncores", "Cores for bootstrap", value = 4, min = 1),
-      actionButton("estimate_btn", "Predict abundance", class = "btn-success"),
+      actionButton("estimate_btn", "Predict abundance", class = "btn-success")
+      
+    ),
+    mainPanel(
+      DT::DTOutput("data_preview"),
+      tableOutput("estimate_out"),
       
       h4("Detection function"),
       plotOutput("detection_plot", height = "350px"),
       h4("Bootstrap distribution (All woodland)"),
       plotOutput("bootstrap_hist", height = "350px")
-      
-    ),
-    mainPanel(
-      DT::DTOutput("data_preview"),
-      tableOutput("estimate_out")
     )
   )
 )
