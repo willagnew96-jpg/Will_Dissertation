@@ -20,6 +20,20 @@ load_chosen_model <- function() {
   }
 }
 
+#make sure the uploaded data is in the right format
+required_transect_cols  <- c("ec5_uuid", "X3_Woodland_name", "X4_Date")
+required_sightings_cols <- c("ec5_parent_uuid", "X18_Perpendicular_dis", "X19_TreeGround",
+                             "X17_Squirrel_species", "X16_Transect_section")
+required_tlengths_cols  <- c("Site", "length")
+
+#give error message if the files don't have the required columns as o/w my code fails silently
+check_columns <- function(df, required, file_label) {
+  missing <- setdiff(required, names(df))
+  if (length(missing) > 0) {
+    #output the names of missing columns for clarity
+    stop(paste0(file_label, " is missing expected column(s): ", paste(missing, collapse = ", ")))
+  }
+}
 
 ui <- fluidPage(
   titlePanel("Squirrel Abundance Predictor"),
@@ -40,8 +54,8 @@ ui <- fluidPage(
       fileInput("model_file", "Fitted model (.rds) - optional, overrides the current model",
                 accept = ".rds"),
       h4("3. Estimate"),
-      numericInput("area_conifer", "Area 1 (km²)", value = 165.8453),
-      numericInput("area_all", "Area 2 (km²)", value = 177.1593),
+      numericInput("area_conifer", "Coniferous Area (km²)", value = 165.8453),
+      numericInput("area_all", "Total Area (km²)", value = 177.1593),
       numericInput("nsim", "Bootstrap simulations", value = 1000, min = 100, step = 100),
       numericInput("ncores", "Cores for bootstrap", value = 4, min = 1),
       actionButton("estimate_btn", "Predict abundance", class = "btn-success")
@@ -74,11 +88,15 @@ server <- function(input, output, session) {
     sightings     <- read.csv(input$sightings_file$datapath, header = TRUE)
     tlengths      <- readxl::read_xlsx(input$tlengths_file$datapath)
     
-    joined <- tryCatch(
+    joined <- tryCatch({
+      check_columns(transect_data, required_transect_cols, "Transect data file")
+      check_columns(sightings, required_sightings_cols, "Sightings file")
+      check_columns(tlengths, required_tlengths_cols, "Transect lengths file")
       combine_data(transect_data, sightings, tlengths,
                    species_filter = input$species,
                    Year_filter    = as.numeric(input$year),
-                   Season_filter  = input$season),
+                   Season_filter  = input$season)
+    },
       error = function(e) {
         #visible error message in case combine_data() errors
         showNotification(paste("Error processing data:", e$message), type = "error")
