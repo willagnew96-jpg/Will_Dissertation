@@ -44,7 +44,13 @@ ui <- fluidPage(
       numericInput("area_all", "Area 2 (km²)", value = 177.1593),
       numericInput("nsim", "Bootstrap simulations", value = 1000, min = 100, step = 100),
       numericInput("ncores", "Cores for bootstrap", value = 4, min = 1),
-      actionButton("estimate_btn", "Predict abundance", class = "btn-success")
+      actionButton("estimate_btn", "Predict abundance", class = "btn-success"),
+      
+      h4("Detection function"),
+      plotOutput("detection_plot", height = "350px"),
+      h4("Bootstrap distribution (All woodland)"),
+      plotOutput("bootstrap_hist", height = "350px")
+      
     ),
     mainPanel(
       DT::DTOutput("data_preview"),
@@ -104,9 +110,10 @@ server <- function(input, output, session) {
     sq_mod <- if (!is.null(input$model_file)) {
       tryCatch(readRDS(input$model_file$datapath), error = function(e) NULL)
     } else {
-      load_chosen_model()
+      #if not use my model
+        load_chosen_model()
     }
-    #if not use my model
+    #if no model is still available ask for name of file to be uploaded
     if (is.null(sq_mod)) {
       showNotification("No model available - upload one or add chosen_model.rds.",
                        type = "error")
@@ -116,14 +123,14 @@ server <- function(input, output, session) {
     newdata <- newdata_reactive()
     
     #show progress bar for bootstrapping
-    withProgress(message = "Running multiple estimate simulations...", value = 0.1, {
+    withProgress(message = "Running multiple prediction simulations...", value = 0.1, {
       result <- tryCatch(
         estimate_population(
           sq_mod = sq_mod, newdata = newdata,
           area_conifer = input$area_conifer, area_all = input$area_all,
           nsim = input$nsim, ncores = input$ncores
         ),
-        #erroe message incase bootstrap fails
+        #error message incase bootstrap fails
         error = function(e) {
           showNotification(paste("Error estimating abundance:", e$message), type = "error")
           NULL
@@ -147,6 +154,23 @@ server <- function(input, output, session) {
     #dataframe displays better than the matrix
     df <- as.data.frame(rv$estimate)
     cbind(Area = rownames(df), df, row.names = NULL)
+  })
+  
+  #create plot of the detection function
+  output$detection_plot <- renderPlot({
+    req(rv$sq_mod)
+    sig <- exp(coef(rv$sq_mod, type = "det"))
+    plot(function(x) gxexp(x, rate = sig), 0, 50,
+         xlab = "Distance (m)", ylab = "Detection probability",
+         las = 1, lwd = 2, col = "brown")
+  })
+  
+  #bootstrap simulations of the abundance
+  output$bootstrap_hist <- renderPlot({
+    req(rv$pb)
+    hist(rv$pb@t.star[, 2],
+         xlab = "Bootstrapped abundance (All woodland)",
+         main = "Bootstrap distribution")
   })
 }
 shinyApp(ui, server)
