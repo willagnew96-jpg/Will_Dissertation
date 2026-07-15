@@ -48,13 +48,15 @@ ui <- fluidPage(
       
     ),
     mainPanel(
-      DT::DTOutput("data_preview"),
-      tableOutput("estimate_out"),
-      
-      h4("Detection function"),
-      plotOutput("detection_plot", height = "350px"),
-      h4("Bootstrap distribution (All woodland)"),
-      plotOutput("bootstrap_hist", height = "350px")
+      tabsetPanel(
+        tabPanel("Data preview", DT::DTOutput("data_preview")),
+        tabPanel("Abundance estimate", tableOutput("estimate_out")),
+        tabPanel("Diagnostic plots",
+                 h4("Detection function"),
+                 plotOutput("detection_plot", height = "350px"),
+                 h4("Bootstrap distribution (All woodland)"),
+                 plotOutput("bootstrap_hist", height = "350px"))
+      )
     )
   )
 )
