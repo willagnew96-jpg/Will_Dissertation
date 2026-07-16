@@ -56,7 +56,10 @@ ui <- fluidPage(
       h4("3. Estimate"),
       numericInput("area_conifer", "Coniferous Area (km²)", value = 165.8453),
       numericInput("area_all", "Total Area (km²)", value = 177.1593),
-      numericInput("nsim", "Bootstrap simulations", value = 1000, min = 100, step = 100),
+      numericInput("nsim", "Bootstrap simulations", value = 10, min = 100, step = 100),
+      helpText("Use ~10 for quick testing; increase to 1000+ for a final result.\
+               Always start with a low number for an idea of how long the simulations will take.\
+               The app will need to be restarted to cancel the, once in progress."),
       numericInput("ncores", "Cores for bootstrap", value = 4, min = 1),
       actionButton("estimate_btn", "Predict abundance", class = "btn-success")
       
