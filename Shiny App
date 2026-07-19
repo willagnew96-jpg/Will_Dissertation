@@ -181,11 +181,41 @@ server <- function(input, output, session) {
   
   #create plot of the detection function
   output$detection_plot <- renderPlot({
+    
     req(rv$sq_mod)
-    sig <- exp(coef(rv$sq_mod, type = "det"))
-    plot(function(x) gxexp(x, rate = sig), 0, 50,
-         xlab = "Distance (m)", ylab = "Detection probability",
-         las = 1, lwd = 2, col = "brown")
+    
+    det_coef <- coef(rv$sq_mod, type = "det")
+    
+    sig_stop <- exp(det_coef[1])
+    sig_walk <- exp(det_coef[1] + det_coef[2])
+    
+    plot(
+      function(x) gxexp(x, rate = sig_stop),
+      from = 0,
+      to = 50,
+      ylim = c(0, 1),
+      xlab = "Distance (m)",
+      ylab = "Detection probability",
+      lwd = 2,
+      col = "blue",
+      las = 1
+    )
+    
+    curve(
+      gxexp(x, rate = sig_walk),
+      add = TRUE,
+      lwd = 2,
+      col = "red"
+    )
+    
+    legend(
+      "topright",
+      legend = c("Stop", "Walk"),
+      col = c("blue", "red"),
+      lwd = 2,
+      bty = "n"
+    )
+    
   })
   
   #bootstrap simulations of the abundance
